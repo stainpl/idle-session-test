@@ -96,5 +96,3 @@ Login endpoint to authenticate users.
 * Can be extended with JWT, MongoDB, or Redis for persistent sessions.
 
 ---
-
-Do you want me to also include a **Usage Example with `Invoke-RestMethod` (PowerShell)** so you can quickly test login from the README itself?
