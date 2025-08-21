@@ -70,12 +70,11 @@ export default function Dashboard(): React.ReactElement {
       const idle = new IdleSessionLogout({
         timeout: TIMEOUT_MS,
         onTimeout: () => {
-          // clear token, show popup, and redirect
           localStorage.removeItem('id_token');
           setShowPopup(true);
           setTimeout(() => navigate('/login', { replace: true }), 1500);
         },
-        popupMessage: "You've been inactive for 30 minutes (demo shorter)",
+        popupMessage: "You've been inactive for 30 minutes (demo - shorter)",
       });
 
       idle.start();
