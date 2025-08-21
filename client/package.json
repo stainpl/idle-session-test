@@ -10,10 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "idle-session-logout": "^1.0.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-router-dom": "^7.8.1",
-    "idle-session-logout": "file:../idle-session-logout"
+    "react-router-dom": "^7.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
