@@ -1,10 +1,36 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../index.css';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const RAW_API = import.meta.env.VITE_API_URL || 'https://idle-session-test-3.onrender.com';
+export const API = String(RAW_API).replace(/\/+$/, ''); 
+
 const DEMO_EMAIL = 'demo@demo.com';
 const DEMO_PASSWORD = 'demo';
+
+async function safeFetch(input: RequestInfo, init?: RequestInit) {
+  const res = await fetch(input, init);
+
+  const contentType = res.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    const json = await res.json();
+    if (!res.ok) {
+      const message = (json && (json.message || json.error)) || `HTTP ${res.status}`;
+      const err = new Error(message);
+      (err as any).status = res.status;
+      (err as any).body = json;
+      throw err;
+    }
+    return json;
+  } else {
+    const text = await res.text();
+    const err = new Error(`Expected JSON response but received: ${text || `status ${res.status}`}`);
+    (err as any).status = res.status;
+    (err as any).body = text;
+    throw err;
+  }
+}
 
 export default function LoginModern() {
   const navigate = useNavigate();
@@ -13,6 +39,11 @@ export default function LoginModern() {
   const [pwVisible, setPwVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  if (import.meta.env.MODE !== 'production') {
+    // eslint-disable-next-line no-console
+    console.log('[dev] API base:', API);
+  }
 
   function validate() {
     if (!email.trim()) return 'Email is required';
@@ -30,33 +61,35 @@ export default function LoginModern() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/login`, {
+      const url = `${API}/api/login`;
+      if (import.meta.env.MODE !== 'production') {
+        console.log('[dev] POST ->', url);
+      }
+
+      const data = await safeFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.message || 'Login failed');
-        setLoading(false);
-        return;
-      }
+
+      // On success, store token and navigate
       localStorage.setItem('id_token', data.token);
-      localStorage.setItem('user_email', data.user.email);
+      localStorage.setItem('user_email', data.user?.email || '');
       navigate('/dashboard', { replace: true });
-    } catch (err) {
-      console.error(err);
-      setError('Network error');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      // show friendly message; prefer server message if available
+      if (err?.message) setError(String(err.message));
+      else setError('Network or server error');
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleUseDemo() {
+  function handleUseDemo() {
     setEmail(DEMO_EMAIL);
     setPassword(DEMO_PASSWORD);
   }
-
 
   return (
     <div className="lm-root">
@@ -64,8 +97,9 @@ export default function LoginModern() {
         <aside className="lm-left" aria-hidden>
           <div className="lm-brand">
             <div className="lm-logo">Idle-Logout</div>
-           
-            <p className="muted">Sign in to continue to the Idle Logout demo app — a modern React experience for testing session inactivity.</p>
+            <p className="muted">
+              Sign in to continue to the Idle Logout demo app — a modern React experience for testing session inactivity.
+            </p>
           </div>
 
           <ul className="lm-features">
@@ -84,7 +118,6 @@ export default function LoginModern() {
           </ul>
 
           <div className="lm-illustration" aria-hidden>
-            {/* subtle SVG / decorative shape for flair */}
             <svg viewBox="0 0 200 120" preserveAspectRatio="xMidYMid meet">
               <defs>
                 <linearGradient id="g1" x1="0" x2="1">
@@ -101,7 +134,6 @@ export default function LoginModern() {
           <form className="lm-form" onSubmit={handleSubmit} aria-label="Login form">
             <div className="lm-form-header">
               <h2>Sign in</h2>
-
             </div>
 
             <div className="lm-hint">
@@ -158,7 +190,7 @@ export default function LoginModern() {
             </div>
 
             <div className="lm-legal muted">
-              <small>By signing in you agree to our <a href="#" onClick={(e)=>e.preventDefault()}>Terms</a>.</small>
+              <small>By signing in you agree to our <a href="#" onClick={(e) => e.preventDefault()}>Terms</a>.</small>
             </div>
           </form>
         </main>
